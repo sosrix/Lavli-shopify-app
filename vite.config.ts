@@ -68,7 +68,7 @@ export default defineConfig({
   ],
   build: {
     assetsInlineLimit: 0,
-    sourcemap: true,
+    sourcemap: false,
   },
   esbuild: {
     supported: {
