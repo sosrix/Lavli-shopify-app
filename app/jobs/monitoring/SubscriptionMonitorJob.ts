@@ -73,11 +73,21 @@ export class SubscriptionMonitorJob extends Job<
       }
 
       const newSubscriptions: MonitoredSubscription[] = [];
-      const cutoffTime = lastChecked ? new Date(lastChecked) : new Date(Date.now() - 60 * 60 * 1000); // 1 hour ago if no lastChecked
+      const cutoffTime = lastChecked ? new Date(lastChecked) : new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago if no lastChecked
+
+      this.logger.info(
+        {shop, cutoffTime: cutoffTime.toISOString(), totalSubscriptions: subscriptionContracts.edges.length},
+        'Processing subscriptions for webhook notifications'
+      );
 
       for (const edge of subscriptionContracts.edges) {
         const subscription = edge.node;
         const createdAt = new Date(subscription.createdAt);
+
+        this.logger.debug(
+          {shop, subscriptionId: subscription.id, createdAt: subscription.createdAt, cutoffTime: cutoffTime.toISOString(), isNew: createdAt > cutoffTime},
+          'Checking subscription creation time'
+        );
 
         // Only process subscriptions created after our last check
         if (createdAt > cutoffTime) {
@@ -106,9 +116,10 @@ export class SubscriptionMonitorJob extends Job<
         }, 'monitoring');
       }
 
-      // Only reschedule if not using INLINE scheduler (which doesn't respect scheduleTime)
+      // DISABLED: Auto-rescheduling removed to prevent infinite loops with INLINE scheduler
+      // For production with CLOUD_TASKS scheduler, uncomment the section below:
+      /*
       if (config.jobs.scheduler !== 'INLINE') {
-        // Schedule next monitoring run (every 5 minutes)
         const nextRunTime = Math.floor((Date.now() + 5 * 60 * 1000) / 1000);
         jobs.enqueue(
           new SubscriptionMonitorJob({
@@ -135,6 +146,12 @@ export class SubscriptionMonitorJob extends Job<
           'Skipping auto-reschedule for INLINE scheduler to prevent infinite loop'
         );
       }
+      */
+
+      this.logger.info(
+        {shop, scheduler: config.jobs.scheduler, newSubscriptionsFound: newSubscriptions.length},
+        'Subscription monitoring completed - auto-rescheduling disabled'
+      );
 
     } catch (error) {
       this.logger.error(
