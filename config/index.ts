@@ -10,7 +10,7 @@ const isProduction = environment === NODE_ENV.PRODUCTION;
 const isDevelopment = environment === NODE_ENV.DEVELOPMENT;
 const isTest = environment === NODE_ENV.TEST;
 const appGID = process.env.APP_GID;
-// Configuration 
+
 export const config: Configuration = {
   environment: process.env.NODE_ENV as NodeEnv,
   i18n: {
