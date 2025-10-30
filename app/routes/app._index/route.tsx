@@ -2,14 +2,14 @@ import {useTranslation} from 'react-i18next';
 import {TablePagination} from '~/components';
 
 import type {LoaderFunctionArgs} from '@remix-run/node';
-import {useLoaderData, type ShouldRevalidateFunction} from '@remix-run/react';
+import {useLoaderData, type ShouldRevalidateFunction, Link} from '@remix-run/react';
 import {
-  Box,
   Card,
   Divider,
   EmptyState,
   Page,
   Text,
+  Button,
   useIndexResourceState,
 } from '@shopify/polaris';
 
@@ -104,8 +104,17 @@ export default function Index() {
   } = useIndexResourceState(formattedContracts);
 
   return (
-    <Page title={t('page.title')}>
-      <Box paddingBlockEnd="400" width="100%">
+    <Page 
+      title={t('page.title')}
+      secondaryActions={[
+        {
+          content: 'Debug Subscriptions',
+          url: '/app/admin/check-subscriptions',
+          external: false,
+        }
+      ]}
+    >
+      <div style={{paddingBottom: '24px', width: '100%'}}>
         {subscriptionContracts?.length === 0 && !savedView ? (
           <Card>
             <EmptyState
@@ -133,7 +142,7 @@ export default function Index() {
             )}
           </Card>
         )}
-      </Box>
+      </div>
 
       <Footer
         page="contracts"

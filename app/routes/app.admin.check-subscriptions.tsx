@@ -1,5 +1,14 @@
 import type {ActionFunctionArgs, LoaderFunctionArgs} from '@remix-run/node';
 import {json} from '@remix-run/node';
+import {useLoaderData, useFetcher} from '@remix-run/react';
+import {
+  Page,
+  Card,
+  Text,
+  Button,
+  Badge,
+  Spinner,
+} from '@shopify/polaris';
 import {authenticate} from '~/shopify.server';
 import {logger} from '~/utils/logger.server';
 
@@ -55,27 +64,19 @@ const SUBSCRIPTION_CHECK_QUERY = `#graphql
   }
 `;
 
-/**
- * API endpoint to check all subscriptions in the shop
- * GET or POST /api/check-subscriptions
- * 
- * This endpoint retrieves all subscription contracts from Shopify
- * and logs them to the console for debugging purposes.
- */
-
 async function checkSubscriptions(request: Request) {
   try {
     const {session, admin} = await authenticate.admin(request);
     const shop = session.shop;
 
-    logger.info({shop}, 'Starting subscription check via API endpoint');
+    logger.info({shop}, 'Starting subscription check via app route');
     let allSubscriptions: any[] = [];
     let cursor: string | null = null;
     let hasNextPage = true;
     let pageCount = 0;
 
     // Fetch all subscriptions with pagination
-    while (hasNextPage && pageCount < 20) { // Safety limit
+    while (hasNextPage && pageCount < 20) {
       pageCount++;
       
       logger.info({shop, page: pageCount, cursor}, 'Fetching subscription page');
@@ -87,8 +88,6 @@ async function checkSubscriptions(request: Request) {
       });
 
       const json = await response.json();
-      
-      logger.info({shop, page: pageCount, responseStatus: response.status}, 'GraphQL response received');
       
       if (!json.data?.subscriptionContracts) {
         logger.error({shop, json, response: response.status}, 'Failed to fetch subscription contracts');
@@ -110,11 +109,11 @@ async function checkSubscriptions(request: Request) {
     }
 
     // Console log all subscriptions with detailed info
-    console.log('\n=== SUBSCRIPTION CHECK RESULTS ===');
+    console.log('\n=== SUBSCRIPTION CHECK RESULTS (APP ROUTE) ===');
     console.log(`Shop: ${shop}`);
     console.log(`Total Subscriptions Found: ${allSubscriptions.length}`);
     console.log(`Fetched ${pageCount} pages`);
-    console.log('=====================================\n');
+    console.log('===============================================\n');
 
     allSubscriptions.forEach((subscription, index) => {
       console.log(`--- SUBSCRIPTION ${index + 1} ---`);
@@ -152,41 +151,22 @@ async function checkSubscriptions(request: Request) {
       console.log('---\n');
     });
 
-    console.log('=== END SUBSCRIPTION CHECK ===\n');
+    console.log('=== END SUBSCRIPTION CHECK (APP ROUTE) ===\n');
 
-    // Also log to structured logger
-    logger.info(
-      {
-        shop,
-        totalSubscriptions: allSubscriptions.length,
-        subscriptions: allSubscriptions.map(sub => ({
-          id: sub.id,
-          status: sub.status,
-          createdAt: sub.createdAt,
-          customerEmail: sub.customer?.email,
-          customerId: sub.customer?.id,
-          orderId: sub.originOrder?.id,
-          linesCount: sub.lines.edges.length
-        }))
-      },
-      'Complete subscription check results'
-    );
-
-    return json({
+    return {
       success: true,
       shop,
       totalSubscriptions: allSubscriptions.length,
       pagesFetched: pageCount,
       subscriptions: allSubscriptions,
-      message: 'All subscriptions have been logged to the console. Check your app logs for detailed output.',
       timestamp: new Date().toISOString(),
-    });
+    };
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const errorStack = error instanceof Error ? error.stack : undefined;
     
-    console.error('ERROR in subscription check:', {
+    console.error('ERROR in subscription check (app route):', {
       message: errorMessage,
       stack: errorStack,
       error: error
@@ -196,26 +176,149 @@ async function checkSubscriptions(request: Request) {
       error: errorMessage,
       stack: errorStack,
       fullError: error
-    }, 'Failed to check subscriptions via API');
+    }, 'Failed to check subscriptions via app route');
 
-    return json({
+    return {
       success: false,
       error: errorMessage,
-      errorDetails: error instanceof Error ? {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      } : error,
       timestamp: new Date().toISOString(),
-    }, { status: 500 });
+    };
   }
 }
 
-// Handle both GET and POST requests
 export const loader = async ({request}: LoaderFunctionArgs) => {
-  return checkSubscriptions(request);
+  const {session} = await authenticate.admin(request);
+  
+  return json({
+    shop: session.shop,
+    lastCheck: null,
+  });
 };
 
 export const action = async ({request}: ActionFunctionArgs) => {
-  return checkSubscriptions(request);
+  const result = await checkSubscriptions(request);
+  return json(result);
 };
+
+export default function SubscriptionCheckPage() {
+  const loaderData = useLoaderData<typeof loader>();
+  const fetcher = useFetcher<any>();
+  
+  const isLoading = fetcher.state === 'submitting';
+  const checkResult = fetcher.data;
+
+  const handleCheckSubscriptions = () => {
+    fetcher.submit({}, {method: 'POST'});
+  };
+
+  return (
+    <Page 
+      title="Debug: Check All Subscriptions"
+      subtitle="Fetch and log all subscriptions from Shopify for debugging"
+      backAction={{content: 'Back to Contracts', url: '/app'}}
+    >
+      <Card>
+        <div style={{marginBottom: '16px'}}>
+          <Card>
+            <Text as="p">
+              This debug tool fetches all subscriptions from your shop and logs detailed information 
+              to the console. Use this to investigate subscription monitoring and webhook issues.
+            </Text>
+          </Card>
+        </div>
+
+        <div style={{marginBottom: '16px'}}>
+          <Text variant="headingMd" as="h2">
+            Shop Information
+          </Text>
+          <Text as="p">Shop: {loaderData.shop}</Text>
+        </div>
+
+        <div style={{marginBottom: '16px'}}>
+          <Button 
+            variant="primary"
+            onClick={handleCheckSubscriptions}
+            loading={isLoading}
+          >
+            {isLoading ? 'Checking Subscriptions...' : 'Check All Subscriptions'}
+          </Button>
+        </div>
+
+        {isLoading && (
+          <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px'}}>
+            <Spinner size="small" />
+            <Text as="p">Fetching subscriptions from Shopify...</Text>
+          </div>
+        )}
+
+        {checkResult && (
+          <Card>
+            <div style={{marginBottom: '16px'}}>
+              <Text variant="headingMd" as="h2">
+                Check Results
+              </Text>
+            </div>
+            
+            {checkResult.success ? (
+              <div>
+                <div style={{marginBottom: '16px'}}>
+                  <Badge tone="success">Success</Badge>
+                </div>
+                
+                <div style={{marginBottom: '16px'}}>
+                  <Text as="p">
+                    <strong>Total Subscriptions:</strong> {checkResult.totalSubscriptions}
+                  </Text>
+                  <Text as="p">
+                    <strong>Pages Fetched:</strong> {checkResult.pagesFetched}
+                  </Text>
+                  <Text as="p">
+                    <strong>Check Time:</strong> {new Date(checkResult.timestamp).toLocaleString()}
+                  </Text>
+                </div>
+                
+                <div style={{marginBottom: '16px'}}>
+                  <Card>
+                    <Text as="p">
+                      ✅ All subscriptions have been logged to the console. 
+                      Check your development server logs or browser console for detailed output.
+                    </Text>
+                  </Card>
+                </div>
+
+                {checkResult.subscriptions && checkResult.subscriptions.length > 0 && (
+                  <div>
+                    <Text variant="headingSm" as="h3">Recent Subscriptions (Sample)</Text>
+                    <div style={{marginTop: '8px'}}>
+                      {checkResult.subscriptions.slice(0, 3).map((sub: any, index: number) => (
+                        <div key={sub.id} style={{marginTop: '4px'}}>
+                          <Text as="p">
+                            {index + 1}. {sub.id} - {sub.status} - {sub.customer?.email || 'No email'}
+                          </Text>
+                        </div>
+                      ))}
+                      {checkResult.subscriptions.length > 3 && (
+                        <Text as="p" tone="subdued">
+                          ... and {checkResult.subscriptions.length - 3} more (see console logs)
+                        </Text>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                <div style={{marginBottom: '16px'}}>
+                  <Badge tone="critical">Error</Badge>
+                </div>
+                <Text as="p" tone="critical">
+                  {checkResult.error}
+                </Text>
+              </div>
+            )}
+          </Card>
+        )}
+      </Card>
+    </Page>
+  );
+}
