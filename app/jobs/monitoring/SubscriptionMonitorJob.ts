@@ -2,6 +2,7 @@ import {jobs} from '~/jobs';
 import {SubscriptionEventNotificationService} from '~/services/SubscriptionEventNotificationService';
 import {Job} from '~/lib/jobs';
 import {unauthenticated} from '~/shopify.server';
+import {config} from 'config';
 import type {Jobs} from '~/types';
 
 const SUBSCRIPTION_MONITOR_QUERY = `#graphql
@@ -105,27 +106,35 @@ export class SubscriptionMonitorJob extends Job<
         }, 'monitoring');
       }
 
-      // Schedule next monitoring run (every 5 minutes)
-      const nextRunTime = Math.floor((Date.now() + 5 * 60 * 1000) / 1000);
-      jobs.enqueue(
-        new SubscriptionMonitorJob({
-          shop,
-          payload: {
-            lastChecked: new Date().toISOString(),
-            cursor: subscriptionContracts.pageInfo.hasNextPage ? subscriptionContracts.pageInfo.endCursor : undefined,
-          },
-        }),
-        { 
-          scheduleTime: {
-            seconds: nextRunTime,
+      // Only reschedule if not using INLINE scheduler (which doesn't respect scheduleTime)
+      if (config.jobs.scheduler !== 'INLINE') {
+        // Schedule next monitoring run (every 5 minutes)
+        const nextRunTime = Math.floor((Date.now() + 5 * 60 * 1000) / 1000);
+        jobs.enqueue(
+          new SubscriptionMonitorJob({
+            shop,
+            payload: {
+              lastChecked: new Date().toISOString(),
+              cursor: subscriptionContracts.pageInfo.hasNextPage ? subscriptionContracts.pageInfo.endCursor : undefined,
+            },
+          }),
+          { 
+            scheduleTime: {
+              seconds: nextRunTime,
+            }
           }
-        }
-      );
+        );
 
-      this.logger.info(
-        {shop, nextRun: new Date(nextRunTime * 1000).toISOString()},
-        'Scheduled next subscription monitoring run'
-      );
+        this.logger.info(
+          {shop, nextRun: new Date(nextRunTime * 1000).toISOString()},
+          'Scheduled next subscription monitoring run'
+        );
+      } else {
+        this.logger.info(
+          {shop, scheduler: config.jobs.scheduler},
+          'Skipping auto-reschedule for INLINE scheduler to prevent infinite loop'
+        );
+      }
 
     } catch (error) {
       this.logger.error(
