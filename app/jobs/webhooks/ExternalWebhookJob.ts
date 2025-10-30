@@ -22,6 +22,8 @@ export class ExternalWebhookJob extends Job<
     const {shop, payload} = this.parameters;
     const {event, subscriptionData} = payload;
 
+    logger.info({shop, event, subscriptionData}, 'EXTERNAL WEBHOOK JOB - Starting to send external webhook');
+
     const webhookUrl = 'https://lhd0tgz8-3000.uks1.devtunnels.ms/api/v1/webhooks/subscriptions-app';
     const endpoint = `${webhookUrl}/${event}`;
 
@@ -41,8 +43,8 @@ export class ExternalWebhookJob extends Job<
 
     try {
       logger.info(
-        {shop, event, endpoint},
-        'Sending subscription event to external webhook'
+        {shop, event, endpoint, payloadSize: payloadString.length},
+        'EXTERNAL WEBHOOK JOB - Sending subscription event to external webhook'
       );
 
       const response = await fetch(endpoint, {
@@ -57,21 +59,31 @@ export class ExternalWebhookJob extends Job<
         body: payloadString,
       });
 
+      logger.info(
+        {shop, event, endpoint, status: response.status, statusText: response.statusText},
+        'EXTERNAL WEBHOOK JOB - Received response from external webhook'
+      );
+
       if (!response.ok) {
+        const responseText = await response.text();
+        logger.error(
+          {shop, event, endpoint, status: response.status, statusText: response.statusText, responseBody: responseText},
+          'EXTERNAL WEBHOOK JOB - External webhook failed with error response'
+        );
         throw new Error(
-          `External webhook failed: ${response.status} ${response.statusText}`
+          `External webhook failed: ${response.status} ${response.statusText} - ${responseText}`
         );
       }
 
       logger.info(
         {shop, event, endpoint, status: response.status},
-        'Successfully sent subscription event to external webhook'
+        'EXTERNAL WEBHOOK JOB - Successfully sent subscription event to external webhook'
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(
-        {shop, event, endpoint, error: errorMessage},
-        'Failed to send subscription event to external webhook'
+        {shop, event, endpoint, error: errorMessage, errorStack: error instanceof Error ? error.stack : undefined},
+        'EXTERNAL WEBHOOK JOB - Failed to send subscription event to external webhook'
       );
       throw error;
     }

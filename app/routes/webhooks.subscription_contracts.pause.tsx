@@ -7,7 +7,7 @@ import type {Jobs} from '~/types';
 export const action = async ({request}: ActionFunctionArgs) => {
   const {topic, shop, payload} = await authenticate.webhook(request);
 
-  logger.info({topic, shop, payload}, 'Received webhook');
+  logger.info({topic, shop, payload}, 'PAUSE WEBHOOK RECEIVED - Processing subscription pause event');
 
   // Send external webhook notification
   const externalWebhookParams: Jobs.Parameters<{
@@ -21,7 +21,11 @@ export const action = async ({request}: ActionFunctionArgs) => {
     },
   };
 
+  logger.info({shop, event: 'subscription-paused'}, 'PAUSE WEBHOOK - Enqueueing external webhook job');
+  
   jobs.enqueue(new ExternalWebhookJob(externalWebhookParams));
+
+  logger.info('PAUSE WEBHOOK - External webhook job enqueued successfully');
 
   return new Response();
 };
