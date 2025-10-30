@@ -17,6 +17,7 @@ import {
   OverviewCard,
   PastOrdersCard,
   PriceSummaryCard,
+  PaymentMethodCard,
   NotFound,
 } from './components';
 import {useExtensionApi} from 'foundation/Api';
@@ -166,6 +167,10 @@ export function SubscriptionDetails({id}: SubscriptionDetailsProps) {
             {priceBreakdownEstimate ? (
               <PriceSummaryCard price={priceBreakdownEstimate} lines={lines} />
             ) : null}
+            <PaymentMethodCard
+              contractId={contractId}
+              refetchSubscriptionContract={refetchSubscriptionContract}
+            />
             <View
               display={Style.default('auto').when(
                 {viewportInlineSize: {min: 'medium'}},
