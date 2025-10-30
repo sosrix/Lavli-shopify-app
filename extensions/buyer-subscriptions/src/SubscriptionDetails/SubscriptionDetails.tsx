@@ -17,7 +17,6 @@ import {
   OverviewCard,
   PastOrdersCard,
   PriceSummaryCard,
-  PaymentMethodCard,
   NotFound,
 } from './components';
 import {useExtensionApi} from 'foundation/Api';
@@ -88,6 +87,8 @@ export function SubscriptionDetails({id}: SubscriptionDetailsProps) {
       pickupAddress={pickupAddress}
       status={status}
       refetchSubscriptionContract={refetchSubscriptionContract}
+      customerPaymentMethod={customerPaymentMethod}
+      billingAddress={data.subscriptionContract.billingPolicy?.billingAddress}
     />
   );
 
@@ -168,13 +169,6 @@ export function SubscriptionDetails({id}: SubscriptionDetailsProps) {
             {priceBreakdownEstimate ? (
               <PriceSummaryCard price={priceBreakdownEstimate} lines={lines} />
             ) : null}
-            <PaymentMethodCard
-              paymentMethod={customerPaymentMethod}
-              onUpdatePaymentMethod={() => {
-                // TODO: Navigate to payment method update
-                console.log('Update payment method');
-              }}
-            />
             <View
               display={Style.default('auto').when(
                 {viewportInlineSize: {min: 'medium'}},

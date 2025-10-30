@@ -72,6 +72,19 @@ query SubscriptionContract($id: ID!) {
           }
         }
       }
+      billingPolicy {
+        billingAddress {
+          address1
+          address2
+          city
+          countryCode
+          firstName
+          lastName
+          phone
+          provinceCode
+          zip
+        }
+      }
       lines(first: 50) {
         edges {
           node {
