@@ -111,6 +111,34 @@ query SubscriptionContract($id: ID!) {
           }
         }
       }
+      customerPaymentMethod(showRevoked: false) {
+        id
+        instrument {
+          ... on CustomerCreditCard {
+            brand
+            expiresSoon
+            expiryMonth
+            expiryYear
+            lastDigits
+            maskedNumber
+            name
+          }
+          ... on CustomerPaypalBillingAgreement {
+            paypalAccountEmail
+          }
+          ... on CustomerShopPayAgreement {
+            name
+            lastDigits
+          }
+        }
+      }
+      billingPolicy {
+        interval
+        intervalCount {
+          count
+          precision
+        }
+      }
     }
   }
 }

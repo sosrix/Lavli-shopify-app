@@ -60,6 +60,7 @@ export function SubscriptionDetails({id}: SubscriptionDetailsProps) {
     upcomingBillingCycles,
     lastOrderPrice,
     lastBillingAttemptErrorType,
+    customerPaymentMethod,
   } = data.subscriptionContract;
 
   const {nextBillingDate} = getBillingCycleInfo(upcomingBillingCycles);
@@ -168,8 +169,11 @@ export function SubscriptionDetails({id}: SubscriptionDetailsProps) {
               <PriceSummaryCard price={priceBreakdownEstimate} lines={lines} />
             ) : null}
             <PaymentMethodCard
-              contractId={contractId}
-              refetchSubscriptionContract={refetchSubscriptionContract}
+              paymentMethod={customerPaymentMethod}
+              onUpdatePaymentMethod={() => {
+                // TODO: Navigate to payment method update
+                console.log('Update payment method');
+              }}
             />
             <View
               display={Style.default('auto').when(
