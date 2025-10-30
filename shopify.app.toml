@@ -1,8 +1,8 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "51d5c017249731ddcf247a2b6c9a6fb7"
-name = "Subscriptions Manager"
-application_url = "https://localhost:3000"
+name = "Lavli's Subscriptions"
+application_url = "https://lavli-shopify-app.onrender.com"
 embedded = true
 
 [build]
@@ -57,7 +57,7 @@ api_version = "2025-10"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_all_orders,read_assigned_fulfillment_orders,write_assigned_fulfillment_orders,write_checkouts,read_checkouts,read_customers,write_customers,write_customer_payment_methods,read_customer_payment_methods,write_draft_orders,read_draft_orders,read_orders,write_orders,read_payment_customizations,write_payment_customizations,read_products,write_products,write_own_subscription_contracts,read_own_subscription_contracts,customer_read_orders,customer_write_orders"
+scopes = "read_all_orders,read_assigned_fulfillment_orders,write_assigned_fulfillment_orders,read_cart_transforms,write_cart_transforms,read_all_cart_transforms,read_validations,write_validations,read_checkout_branding_settings,write_checkout_branding_settings,write_checkouts,read_checkouts,read_customers,write_customers,write_customer_payment_methods,read_customer_payment_methods,write_draft_orders,read_draft_orders,read_locales,write_locales,read_markets,write_markets,read_markets_home,write_markets_home,read_metaobject_definitions,write_metaobject_definitions,read_metaobjects,write_metaobjects,read_orders,write_orders,read_payment_customizations,write_payment_customizations,read_products,write_products,write_own_subscription_contracts,read_own_subscription_contracts,write_theme_code,read_themes,write_themes,customer_read_markets,customer_read_orders,customer_write_orders,unauthenticated_write_checkouts,unauthenticated_read_checkouts,unauthenticated_read_metaobjects"
 optional_scopes = [ ]
 use_legacy_install_flow = false
 
