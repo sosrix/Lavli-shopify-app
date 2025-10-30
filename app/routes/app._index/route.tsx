@@ -111,6 +111,11 @@ export default function Index() {
           content: 'Debug Subscriptions',
           url: '/app/admin/check-subscriptions',
           external: false,
+        },
+        {
+          content: 'Check Webhook Status',
+          url: '/app/admin/webhook-status',
+          external: false,
         }
       ]}
     >

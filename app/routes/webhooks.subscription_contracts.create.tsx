@@ -12,6 +12,7 @@ export const action = async ({request}: ActionFunctionArgs) => {
   console.log(`📅 Time: ${new Date().toISOString()}`);
   console.log(`🔗 URL: ${request.url}`);
   console.log(`📡 Method: ${request.method}`);
+  console.log(`🏷️ Headers:`, Object.fromEntries(request.headers.entries()));
   
   try {
     const {topic, shop, payload} = await authenticate.webhook(request);
@@ -78,8 +79,32 @@ export const action = async ({request}: ActionFunctionArgs) => {
   
   } catch (error) {
     console.log('❌ WEBHOOK ERROR:', error);
+    console.log('❌ This might be a direct browser access (not from Shopify)');
     logger.error({error}, 'Failed to process subscription_contracts.create webhook');
-    return new Response('Webhook processing failed', {status: 500});
+    
+    // Return a helpful error message for direct access
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (errorMessage.includes('authenticate') || errorMessage.includes('Invalid') || errorMessage.includes('Missing')) {
+      return new Response(JSON.stringify({
+        error: 'This is a Shopify webhook endpoint',
+        message: 'This endpoint can only be called by Shopify with proper authentication',
+        note: 'If you are testing, create a real subscription in your store to trigger this webhook',
+        time: new Date().toISOString()
+      }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    return new Response(JSON.stringify({
+      error: 'Webhook processing failed',
+      message: errorMessage,
+      time: new Date().toISOString()
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 };
 
