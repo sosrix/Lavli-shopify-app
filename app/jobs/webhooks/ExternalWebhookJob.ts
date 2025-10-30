@@ -24,18 +24,19 @@ export class ExternalWebhookJob extends Job<
 
     // Extract and prominently log subscription ID
     const subscriptionId = subscriptionData?.id;
+    
+    const webhookUrl = 'https://lhd0tgz8-3000.uks1.devtunnels.ms/api/v1/webhooks/subscriptions-app';
+    const endpoint = `${webhookUrl}/${event}`;
+    
     console.log('\n📤 SENDING EXTERNAL WEBHOOK 📤');
     console.log('===============================');
     console.log(`🆔 SUBSCRIPTION ID: ${subscriptionId}`);
     console.log(`📡 Event: ${event}`);
     console.log(`🏪 Shop: ${shop}`);
-    console.log(`🎯 Webhook URL: https://lavli-api.azurewebsites.net/api/v1/webhooks/shopify/${event}`);
+    console.log(`🎯 Webhook URL: ${endpoint}`);
     console.log('===============================\n');
-
+    
     logger.info({shop, event, subscriptionId, subscriptionData}, 'EXTERNAL WEBHOOK JOB - Starting to send external webhook');
-
-    const webhookUrl = 'https://lhd0tgz8-3000.uks1.devtunnels.ms/api/v1/webhooks/subscriptions-app';
-    const endpoint = `${webhookUrl}/${event}`;
 
     const webhookPayload: ExternalWebhookPayload = {
       shop,
