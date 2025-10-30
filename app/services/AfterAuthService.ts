@@ -2,6 +2,7 @@ import '@shopify/shopify-app-remix/adapters/node';
 
 import {createActiveBillingSchedule} from '~/models/BillingSchedule/BillingSchedule.server';
 import {logger} from '~/utils/logger.server';
+import {jobs, SubscriptionMonitorJob} from '~/jobs';
 
 import {ensureSettingsMetaobjectDefinitionAndObjectExists} from '~/models/Settings/Settings.server';
 
@@ -14,6 +15,30 @@ export class AfterAuthService {
     async function ensureSettingsMetaobjectStep(this: AfterAuthService) {
       await ensureSettingsMetaobjectDefinitionAndObjectExists(
         this.admin.graphql,
+      );
+    },
+
+    async function startSubscriptionMonitoringStep(this: AfterAuthService) {
+      // Start subscription monitoring for webhooks
+      const startTime = Math.floor((Date.now() + 30 * 1000) / 1000); // Start in 30 seconds
+      
+      jobs.enqueue(
+        new SubscriptionMonitorJob({
+          shop: this.session.shop,
+          payload: {
+            lastChecked: new Date().toISOString(),
+          },
+        }),
+        {
+          scheduleTime: {
+            seconds: startTime,
+          }
+        }
+      );
+
+      logger.info(
+        {shop: this.session.shop, startTime: new Date(startTime * 1000).toISOString()},
+        'Scheduled subscription monitoring for external webhooks'
       );
     },
   ];

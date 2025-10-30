@@ -28,6 +28,7 @@ import {TagSubscriptionOrderJob} from './tags';
 import {CustomerSendEmailJob, MerchantSendEmailJob} from './email';
 import {EnqueueInventoryFailureEmailJob} from './email/EnqueueInventoryFailureEmailJob';
 import {SendInventoryFailureEmailJob} from './email/SendInventoryFailureEmailJob';
+import {SubscriptionMonitorJob} from './monitoring/SubscriptionMonitorJob';
 
 export {
   ChargeBillingCyclesJob,
@@ -50,6 +51,7 @@ export {CreateSellingPlanTranslationsJob, ExternalWebhookJob} from './webhooks';
 export {CustomerSendEmailJob, MerchantSendEmailJob} from './email';
 export {EnqueueInventoryFailureEmailJob} from './email/EnqueueInventoryFailureEmailJob';
 export {SendInventoryFailureEmailJob} from './email/SendInventoryFailureEmailJob';
+export {SubscriptionMonitorJob} from './monitoring/SubscriptionMonitorJob';
 
 export const jobs = (() => {
   switch (config.jobs.scheduler) {
@@ -89,4 +91,5 @@ export const jobs = (() => {
   TagSubscriptionOrderJob,
   CreateSellingPlanTranslationsJob,
   ExternalWebhookJob,
+  SubscriptionMonitorJob,
 );
