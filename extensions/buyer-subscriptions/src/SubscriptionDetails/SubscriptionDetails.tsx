@@ -59,7 +59,6 @@ export function SubscriptionDetails({id}: SubscriptionDetailsProps) {
     upcomingBillingCycles,
     lastOrderPrice,
     lastBillingAttemptErrorType,
-    customerPaymentMethod,
   } = data.subscriptionContract;
 
   const {nextBillingDate} = getBillingCycleInfo(upcomingBillingCycles);
@@ -87,8 +86,6 @@ export function SubscriptionDetails({id}: SubscriptionDetailsProps) {
       pickupAddress={pickupAddress}
       status={status}
       refetchSubscriptionContract={refetchSubscriptionContract}
-      customerPaymentMethod={customerPaymentMethod}
-      billingAddress={data.subscriptionContract.billingPolicy?.billingAddress}
     />
   );
 

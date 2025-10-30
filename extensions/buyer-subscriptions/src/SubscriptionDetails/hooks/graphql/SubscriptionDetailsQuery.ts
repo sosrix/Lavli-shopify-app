@@ -78,17 +78,6 @@ query SubscriptionContract($id: ID!) {
           count
           precision
         }
-        billingAddress {
-          address1
-          address2
-          city
-          countryCode
-          firstName
-          lastName
-          phone
-          provinceCode
-          zip
-        }
       }
       lines(first: 50) {
         edges {
@@ -126,27 +115,6 @@ query SubscriptionContract($id: ID!) {
               amount
               currencyCode
             }
-          }
-        }
-      }
-      customerPaymentMethod(showRevoked: false) {
-        id
-        instrument {
-          ... on CustomerCreditCard {
-            brand
-            expiresSoon
-            expiryMonth
-            expiryYear
-            lastDigits
-            maskedNumber
-            name
-          }
-          ... on CustomerPaypalBillingAgreement {
-            paypalAccountEmail
-          }
-          ... on CustomerShopPayAgreement {
-            name
-            lastDigits
           }
         }
       }

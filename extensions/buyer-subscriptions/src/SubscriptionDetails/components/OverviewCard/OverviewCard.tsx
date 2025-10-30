@@ -27,8 +27,6 @@ export interface OverviewCardProps {
   pickupAddress?: AddressType | null;
   status: SubscriptionStatus;
   refetchSubscriptionContract: () => void;
-  customerPaymentMethod?: any;
-  billingAddress?: AddressType;
 }
 
 export function OverviewCard({
@@ -39,8 +37,6 @@ export function OverviewCard({
   pickupAddress,
   status,
   refetchSubscriptionContract,
-  customerPaymentMethod,
-  billingAddress,
 }: OverviewCardProps) {
   const {i18n} = useExtensionApi();
   const [addressModalOpen, setAddressModalOpen] = useState(false);
@@ -80,47 +76,6 @@ export function OverviewCard({
               )}
             </Text>
           </BlockStack>
-
-          {customerPaymentMethod?.instrument ? (
-            <BlockStack spacing="tight">
-              <InlineStack>
-                <Text emphasis="bold">
-                  {i18n.translate('overviewCard.payment')}
-                </Text>
-                {!isCancelled ? (
-                  <Button
-                    kind="plain"
-                    accessibilityLabel={i18n.translate(
-                      'overviewCard.changePaymentMethodButtonLabel',
-                    )}
-                    onPress={() => {
-                      console.log('Change payment method clicked');
-                      // TODO: Implement payment method change
-                    }}
-                  >
-                    <Icon source="pen" appearance="interactive" />
-                  </Button>
-                ) : null}
-              </InlineStack>
-              <Text>
-                {customerPaymentMethod.instrument.__typename === 'CustomerCreditCard' &&
-                  `${customerPaymentMethod.instrument.brand} •••• ${customerPaymentMethod.instrument.lastDigits}`}
-                {customerPaymentMethod.instrument.__typename === 'CustomerPaypalBillingAgreement' &&
-                  'PayPal'}
-                {customerPaymentMethod.instrument.__typename === 'CustomerShopPayAgreement' &&
-                  `Shop Pay${customerPaymentMethod.instrument.lastDigits ? ` •••• ${customerPaymentMethod.instrument.lastDigits}` : ''}`}
-              </Text>
-            </BlockStack>
-          ) : null}
-
-          {billingAddress ? (
-            <BlockStack spacing="tight">
-              <Text emphasis="bold">
-                {i18n.translate('overviewCard.billingAddress')}
-              </Text>
-              <Address address={billingAddress} />
-            </BlockStack>
-          ) : null}
 
           {shippingAddress ? (
             <BlockStack spacing="tight">
