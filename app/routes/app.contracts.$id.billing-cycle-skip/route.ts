@@ -6,8 +6,9 @@ import {
 import {composeGid} from '@shopify/admin-graphql-api-utilities';
 import i18n from '~/i18n/i18next.server';
 import {skipOrResumeBillingCycle} from '~/services/SubscriptionBillingCycleEditService';
+import {jobs, ExternalWebhookJob} from '~/jobs';
 import {authenticate} from '~/shopify.server';
-import type {WithToast} from '~/types';
+import type {WithToast, Jobs} from '~/types';
 import {SkipOrResume} from '~/utils/constants';
 import {isNonEmptyString} from '~/utils/helpers/form';
 import {toast} from '~/utils/toast';
@@ -18,7 +19,7 @@ export async function action({
   request,
   params,
 }: ActionFunctionArgs): Promise<TypedResponse<WithToast>> {
-  const {admin} = await authenticate.admin(request);
+  const {admin, session} = await authenticate.admin(request);
   const t = await i18n.getFixedT(request, 'app.contracts');
   const body = await request.formData();
 
@@ -49,6 +50,26 @@ export async function action({
   if (!response || response.userErrors?.length > 0) {
     return skipError;
   }
+
+  // Send external webhook notification for billing cycle skip/resume
+  const isSkipping = skip === SkipOrResume.Skip;
+  const externalWebhookParams: Jobs.Parameters<{
+    event: string;
+    subscriptionData: any;
+  }> = {
+    shop: session.shop,
+    payload: {
+      event: 'subscription-billing-cycle-skipped',
+      subscriptionData: {
+        admin_graphql_api_id: contractId,
+        cycle_index: parseInt(billingCycleIndex, 10),
+        skipped: isSkipping,
+        source: 'app', // Indicate this came from the app, not a webhook
+      },
+    },
+  };
+
+  jobs.enqueue(new ExternalWebhookJob(externalWebhookParams));
 
   return json(
     toast(

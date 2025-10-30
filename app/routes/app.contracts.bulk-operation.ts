@@ -9,7 +9,8 @@ import type {TypedResponseWithToast} from '~/types';
 import type {BulkMutationResult} from '~/utils/bulkOperations';
 import {performBulkMutation} from '~/utils/bulkOperations';
 import {getTranslationKeyFromAction} from '~/utils/helpers/getTranslationKeyFromAction';
-import {jobs, CustomerSendEmailJob} from '~/jobs';
+import {jobs, CustomerSendEmailJob, ExternalWebhookJob} from '~/jobs';
+import type {Jobs} from '~/types';
 
 const BULK_PAUSE_ACTION = 'bulk-pause';
 const BULK_ACTIVATE_ACTION = 'bulk-activate';
@@ -94,6 +95,25 @@ export async function action({
               },
             }),
           );
+
+          // Send external webhook for bulk pause
+          const externalWebhookParams: Jobs.Parameters<{
+            event: string;
+            subscriptionData: any;
+          }> = {
+            shop,
+            payload: {
+              event: 'subscription-paused',
+              subscriptionData: {
+                admin_graphql_api_id: contractId,
+                admin_graphql_api_customer_id: customerId,
+                status: 'PAUSED',
+                source: 'app-bulk', // Indicate this came from bulk operation
+              },
+            },
+          };
+
+          jobs.enqueue(new ExternalWebhookJob(externalWebhookParams));
         }
       } else if ('subscriptionContractActivate' in result.data) {
         if (!result.data.subscriptionContractActivate.contract) {
@@ -116,6 +136,55 @@ export async function action({
               },
             }),
           );
+
+          // Send external webhook for bulk resume
+          const externalWebhookParams: Jobs.Parameters<{
+            event: string;
+            subscriptionData: any;
+          }> = {
+            shop,
+            payload: {
+              event: 'subscription-resumed',
+              subscriptionData: {
+                admin_graphql_api_id: contractId,
+                admin_graphql_api_customer_id: customerId,
+                status: 'ACTIVE',
+                source: 'app-bulk', // Indicate this came from bulk operation
+              },
+            },
+          };
+
+          jobs.enqueue(new ExternalWebhookJob(externalWebhookParams));
+        }
+      } else if ('subscriptionContractCancel' in result.data) {
+        if (!result.data.subscriptionContractCancel.contract) {
+          return;
+        }
+
+        const customerId =
+          result.data.subscriptionContractCancel.contract?.customer?.id;
+
+        const contractId = result.data.subscriptionContractCancel.contract.id;
+
+        if (customerId && contractId) {
+          // Send external webhook for bulk cancel
+          const externalWebhookParams: Jobs.Parameters<{
+            event: string;
+            subscriptionData: any;
+          }> = {
+            shop,
+            payload: {
+              event: 'subscription-canceled',
+              subscriptionData: {
+                admin_graphql_api_id: contractId,
+                admin_graphql_api_customer_id: customerId,
+                status: 'CANCELLED',
+                source: 'app-bulk', // Indicate this came from bulk operation
+              },
+            },
+          };
+
+          jobs.enqueue(new ExternalWebhookJob(externalWebhookParams));
         }
       }
     });

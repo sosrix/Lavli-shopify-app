@@ -1,6 +1,7 @@
 import type pino from 'pino';
 import SubscriptionContractCancel from '~/graphql/SubscriptionContractCancelMutation';
-import type {GraphQLClient} from '~/types';
+import {jobs, ExternalWebhookJob} from '~/jobs';
+import type {GraphQLClient, Jobs} from '~/types';
 import {logger} from '~/utils/logger.server';
 
 export class SubscriptionContractCancelService {
@@ -8,10 +9,10 @@ export class SubscriptionContractCancelService {
 
   constructor(
     private graphql: GraphQLClient,
-    shopDomain: string,
+    private shopDomain: string,
     private subscriptionContractId: string,
   ) {
-    this.log = logger.child({shopDomain, subscriptionContractId});
+    this.log = logger.child({shopDomain: this.shopDomain, subscriptionContractId});
   }
 
   async run(): Promise<void> {
@@ -58,5 +59,24 @@ export class SubscriptionContractCancelService {
         'Failed to cancel subscription via SubscriptionContractCancel',
       );
     }
+
+    // Send external webhook notification for app-initiated cancel
+    this.log.info('Sending external webhook for subscription canceled');
+    const externalWebhookParams: Jobs.Parameters<{
+      event: string;
+      subscriptionData: any;
+    }> = {
+      shop: this.shopDomain,
+      payload: {
+        event: 'subscription-canceled',
+        subscriptionData: {
+          admin_graphql_api_id: this.subscriptionContractId,
+          status: 'CANCELLED',
+          source: 'app', // Indicate this came from the app, not a webhook
+        },
+      },
+    };
+
+    jobs.enqueue(new ExternalWebhookJob(externalWebhookParams));
   }
 }

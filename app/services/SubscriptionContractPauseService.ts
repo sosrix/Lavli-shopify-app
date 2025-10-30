@@ -1,7 +1,7 @@
 import type pino from 'pino';
 import SubscriptionContractPause from '~/graphql/SubscriptionContractPauseMutation';
-import {jobs, CustomerSendEmailJob} from '~/jobs';
-import type {GraphQLClient} from '~/types';
+import {jobs, CustomerSendEmailJob, ExternalWebhookJob} from '~/jobs';
+import type {GraphQLClient, Jobs} from '~/types';
 import {logger} from '~/utils/logger.server';
 
 export class SubscriptionContractPauseService {
@@ -76,6 +76,26 @@ export class SubscriptionContractPauseService {
           shop: this.shopDomain,
         }),
       );
+
+      // Send external webhook notification for app-initiated pause
+      this.log.info('Sending external webhook for subscription paused');
+      const externalWebhookParams: Jobs.Parameters<{
+        event: string;
+        subscriptionData: any;
+      }> = {
+        shop: this.shopDomain,
+        payload: {
+          event: 'subscription-paused',
+          subscriptionData: {
+            admin_graphql_api_id: this.subscriptionContractId,
+            admin_graphql_api_customer_id: subscriptionContractPause.contract.customer.id,
+            status: 'PAUSED',
+            source: 'app', // Indicate this came from the app, not a webhook
+          },
+        },
+      };
+
+      jobs.enqueue(new ExternalWebhookJob(externalWebhookParams));
     }
   }
 }

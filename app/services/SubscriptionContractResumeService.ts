@@ -1,7 +1,7 @@
 import type pino from 'pino';
 import SubscriptionContractResume from '~/graphql/SubscriptionContractResumeMutation';
-import {jobs, CustomerSendEmailJob} from '~/jobs';
-import type {GraphQLClient} from '~/types';
+import {jobs, CustomerSendEmailJob, ExternalWebhookJob} from '~/jobs';
+import type {GraphQLClient, Jobs} from '~/types';
 import {logger} from '~/utils/logger.server';
 
 export class SubscriptionContractResumeService {
@@ -74,6 +74,26 @@ export class SubscriptionContractResumeService {
           shop: this.shopDomain,
         }),
       );
+
+      // Send external webhook notification for app-initiated resume
+      this.log.info('Sending external webhook for subscription resumed');
+      const externalWebhookParams: Jobs.Parameters<{
+        event: string;
+        subscriptionData: any;
+      }> = {
+        shop: this.shopDomain,
+        payload: {
+          event: 'subscription-resumed',
+          subscriptionData: {
+            admin_graphql_api_id: this.subscriptionContractId,
+            admin_graphql_api_customer_id: subscriptionContractActivate.contract.customer.id,
+            status: 'ACTIVE',
+            source: 'app', // Indicate this came from the app, not a webhook
+          },
+        },
+      };
+
+      jobs.enqueue(new ExternalWebhookJob(externalWebhookParams));
     }
   }
 }
