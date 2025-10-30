@@ -1,8 +1,8 @@
 import type {ActionFunctionArgs} from '@remix-run/node';
-import {DunningStopJob, jobs, TagSubscriptionOrderJob} from '~/jobs';
+import {DunningStopJob, jobs, TagSubscriptionOrderJob, ExternalWebhookJob} from '~/jobs';
 import {RECURRING_ORDER_TAGS} from '~/jobs/tags/constants';
 import {authenticate} from '~/shopify.server';
-import type {Webhooks} from '~/types';
+import type {Jobs, Webhooks} from '~/types';
 import {logger} from '~/utils/logger.server';
 
 export const action = async ({request}: ActionFunctionArgs) => {
@@ -26,6 +26,20 @@ export const action = async ({request}: ActionFunctionArgs) => {
       },
     }),
   );
+
+  // Send external webhook notification
+  const externalWebhookParams: Jobs.Parameters<{
+    event: string;
+    subscriptionData: any;
+  }> = {
+    shop,
+    payload: {
+      event: 'subscription-billing-attempt-success',
+      subscriptionData: payload,
+    },
+  };
+
+  jobs.enqueue(new ExternalWebhookJob(externalWebhookParams));
 
   return new Response();
 };

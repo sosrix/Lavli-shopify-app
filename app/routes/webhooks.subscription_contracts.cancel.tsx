@@ -1,7 +1,7 @@
 import type {ActionFunctionArgs} from '@remix-run/node';
 import {authenticate} from '~/shopify.server';
 import {logger} from '~/utils/logger.server';
-import {CustomerSendEmailJob, jobs, MerchantSendEmailJob} from '~/jobs';
+import {CustomerSendEmailJob, jobs, MerchantSendEmailJob, ExternalWebhookJob} from '~/jobs';
 import {CustomerEmailTemplateName} from '~/services/CustomerSendEmailService';
 import type {Jobs, Webhooks} from '~/types';
 
@@ -27,6 +27,20 @@ export const action = async ({request}: ActionFunctionArgs) => {
 
   jobs.enqueue(new CustomerSendEmailJob(emailParams));
   jobs.enqueue(new MerchantSendEmailJob(merchantParams));
+
+  // Send external webhook notification
+  const externalWebhookParams: Jobs.Parameters<{
+    event: string;
+    subscriptionData: any;
+  }> = {
+    shop,
+    payload: {
+      event: 'subscription-canceled',
+      subscriptionData: payload,
+    },
+  };
+
+  jobs.enqueue(new ExternalWebhookJob(externalWebhookParams));
 
   return new Response();
 };

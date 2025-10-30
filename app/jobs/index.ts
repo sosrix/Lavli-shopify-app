@@ -6,7 +6,7 @@ import {
   JobRunner,
   TestScheduler,
 } from '~/lib/jobs';
-import {CreateSellingPlanTranslationsJob} from './webhooks';
+import {CreateSellingPlanTranslationsJob, ExternalWebhookJob} from './webhooks';
 import {
   ChargeBillingCyclesJob,
   RebillSubscriptionJob,
@@ -45,7 +45,7 @@ export {
 export {DunningStartJob, DunningStopJob} from './dunning';
 
 export {TagSubscriptionOrderJob} from './tags';
-export {CreateSellingPlanTranslationsJob} from './webhooks';
+export {CreateSellingPlanTranslationsJob, ExternalWebhookJob} from './webhooks';
 
 export {CustomerSendEmailJob, MerchantSendEmailJob} from './email';
 export {EnqueueInventoryFailureEmailJob} from './email/EnqueueInventoryFailureEmailJob';
@@ -88,4 +88,5 @@ export const jobs = (() => {
   SendInventoryFailureEmailJob,
   TagSubscriptionOrderJob,
   CreateSellingPlanTranslationsJob,
+  ExternalWebhookJob,
 );

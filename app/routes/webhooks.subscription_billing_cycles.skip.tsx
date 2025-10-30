@@ -1,6 +1,6 @@
 import type {ActionFunctionArgs} from '@remix-run/node';
 import {composeGid} from '@shopify/admin-graphql-api-utilities';
-import {CustomerSendEmailJob, jobs} from '~/jobs';
+import {CustomerSendEmailJob, jobs, ExternalWebhookJob} from '~/jobs';
 import {CustomerEmailTemplateName} from '~/services/CustomerSendEmailService';
 import {authenticate} from '~/shopify.server';
 import type {Jobs, Webhooks} from '~/types';
@@ -27,6 +27,23 @@ export const action = async ({request}: ActionFunctionArgs) => {
   };
 
   jobs.enqueue(new CustomerSendEmailJob(params));
+
+  // Send external webhook notification
+  const externalWebhookParams: Jobs.Parameters<{
+    event: string;
+    subscriptionData: any;
+  }> = {
+    shop,
+    payload: {
+      event: 'subscription-billing-cycle-skipped',
+      subscriptionData: {
+        ...payload,
+        admin_graphql_api_id: subscriptionContractGid,
+      },
+    },
+  };
+
+  jobs.enqueue(new ExternalWebhookJob(externalWebhookParams));
 
   return new Response();
 };

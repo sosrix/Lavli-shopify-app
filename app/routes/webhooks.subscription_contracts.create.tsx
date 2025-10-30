@@ -1,7 +1,7 @@
 import type {ActionFunctionArgs} from '@remix-run/node';
 import {authenticate} from '~/shopify.server';
 import {logger} from '~/utils/logger.server';
-import {CustomerSendEmailJob, jobs, TagSubscriptionOrderJob} from '~/jobs';
+import {CustomerSendEmailJob, jobs, TagSubscriptionOrderJob, ExternalWebhookJob} from '~/jobs';
 import {CustomerEmailTemplateName} from '~/services/CustomerSendEmailService';
 import type {Jobs, Webhooks} from '~/types';
 import {FIRST_ORDER_TAGS} from '~/jobs/tags/constants';
@@ -33,6 +33,20 @@ export const action = async ({request}: ActionFunctionArgs) => {
   };
 
   jobs.enqueue(new TagSubscriptionOrderJob(tagParams));
+
+  // Send external webhook notification
+  const externalWebhookParams: Jobs.Parameters<{
+    event: string;
+    subscriptionData: any;
+  }> = {
+    shop,
+    payload: {
+      event: 'subscription-created',
+      subscriptionData: payload,
+    },
+  };
+
+  jobs.enqueue(new ExternalWebhookJob(externalWebhookParams));
 
   return new Response();
 };
