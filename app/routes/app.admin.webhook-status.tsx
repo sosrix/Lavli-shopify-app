@@ -167,13 +167,31 @@ export default function WebhookStatusPage() {
             {data.subscriptionWebhooks === 0 && (
               <div style={{marginBottom: '16px'}}>
                 <Card>
-                  <Text as="p" tone="critical">
-                    ❌ NO SUBSCRIPTION WEBHOOKS FOUND! This explains why subscription creation events are not being received.
-                  </Text>
-                  <div style={{marginTop: '12px'}}>
-                    <Text as="p">
-                      <strong>Solution:</strong> Redeploy your app or run webhook registration to fix this issue.
+                  <div style={{
+                    padding: '16px', 
+                    backgroundColor: '#fef2f2', 
+                    border: '1px solid #fecaca', 
+                    borderRadius: '8px'
+                  }}>
+                    <Text as="h3" variant="headingSm">
+                      ❌ NO SUBSCRIPTION WEBHOOKS FOUND!
                     </Text>
+                    <Text as="p" variant="bodyMd">
+                      This explains why subscription creation events are not being received.
+                    </Text>
+                    <div style={{marginTop: '12px'}}>
+                      <Button 
+                        variant="primary" 
+                        url="/app/admin/register-webhooks-ui"
+                      >
+                        Register Webhooks Now
+                      </Button>
+                    </div>
+                    <div style={{marginTop: '8px'}}>
+                      <Text as="p" variant="bodySm">
+                        Solution: Register webhooks manually to fix this issue
+                      </Text>
+                    </div>
                   </div>
                 </Card>
               </div>
