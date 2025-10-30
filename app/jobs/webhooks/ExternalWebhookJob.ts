@@ -22,9 +22,19 @@ export class ExternalWebhookJob extends Job<
     const {shop, payload} = this.parameters;
     const {event, subscriptionData} = payload;
 
-    logger.info({shop, event, subscriptionData}, 'EXTERNAL WEBHOOK JOB - Starting to send external webhook');
+    // Extract and prominently log subscription ID
+    const subscriptionId = subscriptionData?.id;
+    console.log('\n📤 SENDING EXTERNAL WEBHOOK 📤');
+    console.log('===============================');
+    console.log(`🆔 SUBSCRIPTION ID: ${subscriptionId}`);
+    console.log(`📡 Event: ${event}`);
+    console.log(`🏪 Shop: ${shop}`);
+    console.log(`🎯 Webhook URL: https://lavli-api.azurewebsites.net/api/v1/webhooks/shopify/${event}`);
+    console.log('===============================\n');
 
-    const webhookUrl = 'https://lhd0tgz8-3000.uks1.devtunnels.ms/api/v1/webhooks/subscriptions-app';
+    logger.info({shop, event, subscriptionId, subscriptionData}, 'EXTERNAL WEBHOOK JOB - Starting to send external webhook');
+
+    const webhookUrl = 'https://lavli-api.azurewebsites.net/api/v1/webhooks/shopify';
     const endpoint = `${webhookUrl}/${event}`;
 
     const webhookPayload: ExternalWebhookPayload = {
@@ -66,8 +76,10 @@ export class ExternalWebhookJob extends Job<
 
       if (!response.ok) {
         const responseText = await response.text();
+        console.log(`❌ WEBHOOK FAILED for Subscription ID: ${subscriptionData?.id} - Status: ${response.status}`);
+        
         logger.error(
-          {shop, event, endpoint, status: response.status, statusText: response.statusText, responseBody: responseText},
+          {shop, event, subscriptionId: subscriptionData?.id, endpoint, status: response.status, statusText: response.statusText, responseBody: responseText},
           'EXTERNAL WEBHOOK JOB - External webhook failed with error response'
         );
         throw new Error(
@@ -75,14 +87,18 @@ export class ExternalWebhookJob extends Job<
         );
       }
 
+      console.log(`✅ WEBHOOK SUCCESS for Subscription ID: ${subscriptionData?.id} - Status: ${response.status}`);
+      
       logger.info(
-        {shop, event, endpoint, status: response.status},
+        {shop, event, subscriptionId: subscriptionData?.id, endpoint, status: response.status},
         'EXTERNAL WEBHOOK JOB - Successfully sent subscription event to external webhook'
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      console.log(`❌ WEBHOOK ERROR for Subscription ID: ${subscriptionData?.id} - ${errorMessage}`);
+      
       logger.error(
-        {shop, event, endpoint, error: errorMessage, errorStack: error instanceof Error ? error.stack : undefined},
+        {shop, event, subscriptionId: subscriptionData?.id, endpoint, error: errorMessage, errorStack: error instanceof Error ? error.stack : undefined},
         'EXTERNAL WEBHOOK JOB - Failed to send subscription event to external webhook'
       );
       throw error;
