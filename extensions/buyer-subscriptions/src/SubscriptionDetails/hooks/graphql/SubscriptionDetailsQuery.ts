@@ -73,6 +73,11 @@ query SubscriptionContract($id: ID!) {
         }
       }
       billingPolicy {
+        interval
+        intervalCount {
+          count
+          precision
+        }
         billingAddress {
           address1
           address2
@@ -143,13 +148,6 @@ query SubscriptionContract($id: ID!) {
             name
             lastDigits
           }
-        }
-      }
-      billingPolicy {
-        interval
-        intervalCount {
-          count
-          precision
         }
       }
     }
