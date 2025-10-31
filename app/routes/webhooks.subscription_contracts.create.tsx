@@ -44,6 +44,8 @@ export const action = async ({request}: ActionFunctionArgs) => {
   // The checkout token is available in REST API as 'checkout_token' but not in GraphQL
   // We'll try to get it from the order's confirmation number or name instead
   let checkoutId: string | null = null;
+  let orderNote: string | null = null;
+  let customAttributes: any[] = [];
   const {admin_graphql_api_origin_order_id: orderId} = payload;
   
   if (orderId) {
@@ -57,6 +59,10 @@ export const action = async ({request}: ActionFunctionArgs) => {
             name
             confirmationNumber
             note
+            customAttributes {
+              key
+              value
+            }
           }
         }
       `;
@@ -73,9 +79,24 @@ export const action = async ({request}: ActionFunctionArgs) => {
         const order = data.data.order;
         // Use confirmation number as checkout identifier if available
         checkoutId = order.confirmationNumber || order.name || null;
+        orderNote = order.note || null;
+        customAttributes = order.customAttributes || [];
+        
         if (checkoutId) {
           console.log(`🛒 Order identifier retrieved: ${checkoutId}`);
-          logger.info({checkoutId, orderId, orderName: order.name}, 'Successfully retrieved order identifier from origin order');
+          if (orderNote) {
+            console.log(`📝 Order note: ${orderNote}`);
+          }
+          if (customAttributes.length > 0) {
+            console.log(`🏷️ Custom attributes:`, customAttributes);
+          }
+          logger.info({
+            checkoutId, 
+            orderId, 
+            orderName: order.name, 
+            orderNote,
+            customAttributes
+          }, 'Successfully retrieved order details from origin order');
         } else {
           console.log('⚠️ No checkout identifier found in origin order');
           logger.warn({orderId}, 'Origin order exists but has no identifiable checkout information');
@@ -117,12 +138,16 @@ export const action = async ({request}: ActionFunctionArgs) => {
     event: string;
     subscriptionData: any;
     checkoutId?: string | null;
+    orderNote?: string | null;
+    customAttributes?: any[];
   }> = {
     shop,
     payload: {
       event: 'subscription-created',
       subscriptionData: payload,
       checkoutId,
+      orderNote,
+      customAttributes,
     },
   };
 

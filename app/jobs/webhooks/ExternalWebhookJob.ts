@@ -8,6 +8,8 @@ interface ExternalWebhookPayload {
   event: string;
   subscriptionData: any;
   checkoutId?: string | null;
+  orderNote?: string | null;
+  customAttributes?: any[];
   timestamp: string;
 }
 
@@ -16,13 +18,15 @@ export class ExternalWebhookJob extends Job<
     event: string;
     subscriptionData: any;
     checkoutId?: string | null;
+    orderNote?: string | null;
+    customAttributes?: any[];
   }>
 > {
   public queue: string = 'webhooks';
 
   async perform(): Promise<void> {
     const {shop, payload} = this.parameters;
-    const {event, subscriptionData, checkoutId} = payload;
+    const {event, subscriptionData, checkoutId, orderNote, customAttributes} = payload;
 
     // Extract and prominently log subscription ID
     const subscriptionId = subscriptionData?.id;
@@ -36,18 +40,26 @@ export class ExternalWebhookJob extends Job<
     if (checkoutId) {
       console.log(`🛒 CHECKOUT ID: ${checkoutId}`);
     }
-    console.log(`📡 Event: ${event}`);
+    if (orderNote) {
+      console.log(`� ORDER NOTE: ${orderNote}`);
+    }
+    if (customAttributes && customAttributes.length > 0) {
+      console.log(`🏷️ CUSTOM ATTRIBUTES:`, customAttributes);
+    }
+    console.log(`�📡 Event: ${event}`);
     console.log(`🏪 Shop: ${shop}`);
     console.log(`🎯 Webhook URL: ${endpoint}`);
     console.log('===============================\n');
     
-    logger.info({shop, event, subscriptionId, checkoutId, subscriptionData}, 'EXTERNAL WEBHOOK JOB - Starting to send external webhook');
+    logger.info({shop, event, subscriptionId, checkoutId, orderNote, customAttributes, subscriptionData}, 'EXTERNAL WEBHOOK JOB - Starting to send external webhook');
 
     const webhookPayload: ExternalWebhookPayload = {
       shop,
       event,
       subscriptionData,
       checkoutId,
+      orderNote,
+      customAttributes,
       timestamp: new Date().toISOString(),
     };
 
