@@ -7,7 +7,7 @@ import {logger} from '~/utils/logger.server';
 import {createHmac} from 'crypto';
 
 async function sendExternalWebhook(shop: string, event: string, subscriptionData: any) {
-  const webhookUrl = 'https://lhd0tgz8-3000.uks1.devtunnels.ms/api/v1/webhooks/subscriptions-app';
+  const webhookUrl = 'https://lavli-admin.azurewebsites.net/api/v1/webhooks/subscriptions-app';
   const endpoint = `${webhookUrl}/${event}`;
 
   const webhookPayload = {

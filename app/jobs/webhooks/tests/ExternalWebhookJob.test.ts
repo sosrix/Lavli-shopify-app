@@ -52,7 +52,7 @@ describe('ExternalWebhookJob', () => {
     const callArgs = mockFetch.mock.calls[0];
     const [url, options] = callArgs;
     
-    expect(url).toBe('https://lhd0tgz8-3000.uks1.devtunnels.ms/api/v1/webhooks/subscriptions-app/subscription-created');
+    expect(url).toBe('https://lavli-admin.azurewebsites.net/api/v1/webhooks/subscriptions-app/subscription-created');
     expect(options.method).toBe('POST');
     expect(options.headers['Content-Type']).toBe('application/json');
     expect(options.headers['User-Agent']).toBe('Shopify-Subscriptions-App');
@@ -142,7 +142,7 @@ describe('ExternalWebhookJob', () => {
       await job.perform();
 
       expect(mockFetch).toHaveBeenCalledWith(
-        `https://lhd0tgz8-3000.uks1.devtunnels.ms/api/v1/webhooks/subscriptions-app/${event}`,
+        `https://lavli-admin.azurewebsites.net/api/v1/webhooks/subscriptions-app/${event}`,
         expect.any(Object)
       );
     }

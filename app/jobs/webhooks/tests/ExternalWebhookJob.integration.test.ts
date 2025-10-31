@@ -4,7 +4,7 @@ import {ExternalWebhookJob} from '../ExternalWebhookJob';
 
 
 const TEST_ENABLED = process.env.TEST_WEBHOOK_ENABLED === 'true';
-const TEST_WEBHOOK_URL = process.env.TEST_WEBHOOK_URL || 'https://lhd0tgz8-3000.uks1.devtunnels.ms/api/v1/webhooks/subscriptions-app';
+const TEST_WEBHOOK_URL = process.env.TEST_WEBHOOK_URL || 'https://lavli-admin.azurewebsites.net/api/v1/webhooks/subscriptions-app';
 
 describe.skipIf(!TEST_ENABLED)('ExternalWebhookJob Integration Tests', () => {
   const mockShop = 'test-shop.myshopify.com';
