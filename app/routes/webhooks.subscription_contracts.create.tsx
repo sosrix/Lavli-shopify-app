@@ -40,6 +40,9 @@ export const action = async ({request}: ActionFunctionArgs) => {
     }, 'NEW SUBSCRIPTION CREATED - Customer purchase detected');
 
   // Get checkout ID from the origin order if available
+  // Note: Shopify's Order object doesn't have a checkoutId field in the Admin API
+  // The checkout token is available in REST API as 'checkout_token' but not in GraphQL
+  // We'll try to get it from the order's confirmation number or name instead
   let checkoutId: string | null = null;
   const {admin_graphql_api_origin_order_id: orderId} = payload;
   
@@ -48,11 +51,12 @@ export const action = async ({request}: ActionFunctionArgs) => {
       const {admin} = await unauthenticated.admin(shop);
       
       const orderQuery = `#graphql
-        query GetOrderCheckout($orderId: ID!) {
+        query GetOrderDetails($orderId: ID!) {
           order(id: $orderId) {
             id
-            checkoutId
             name
+            confirmationNumber
+            note
           }
         }
       `;
@@ -65,17 +69,24 @@ export const action = async ({request}: ActionFunctionArgs) => {
       
       const data = await response.json() as any;
       
-      if (data.data?.order?.checkoutId) {
-        checkoutId = data.data.order.checkoutId;
-        console.log(`🛒 Checkout ID retrieved: ${checkoutId}`);
-        logger.info({checkoutId, orderId}, 'Successfully retrieved checkout ID from origin order');
+      if (data.data?.order) {
+        const order = data.data.order;
+        // Use confirmation number as checkout identifier if available
+        checkoutId = order.confirmationNumber || order.name || null;
+        if (checkoutId) {
+          console.log(`🛒 Order identifier retrieved: ${checkoutId}`);
+          logger.info({checkoutId, orderId, orderName: order.name}, 'Successfully retrieved order identifier from origin order');
+        } else {
+          console.log('⚠️ No checkout identifier found in origin order');
+          logger.warn({orderId}, 'Origin order exists but has no identifiable checkout information');
+        }
       } else {
-        console.log('⚠️ No checkout ID found in origin order');
-        logger.warn({orderId}, 'Origin order exists but has no checkout ID');
+        console.log('⚠️ Order not found');
+        logger.warn({orderId}, 'Origin order not found');
       }
     } catch (error) {
-      console.log('❌ Failed to retrieve checkout ID:', error);
-      logger.error({error, orderId}, 'Failed to retrieve checkout ID from origin order');
+      console.log('❌ Failed to retrieve order details:', error);
+      logger.error({error, orderId}, 'Failed to retrieve order details from origin order');
     }
   }
 
