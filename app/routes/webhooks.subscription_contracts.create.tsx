@@ -5,6 +5,7 @@ import {CustomerSendEmailJob, jobs, TagSubscriptionOrderJob, ExternalWebhookJob}
 import {CustomerEmailTemplateName} from '~/services/CustomerSendEmailService';
 import type {Jobs, Webhooks} from '~/types';
 import {FIRST_ORDER_TAGS} from '~/jobs/tags/constants';
+import {unauthenticated} from '~/shopify.server';
 
 export const action = async ({request}: ActionFunctionArgs) => {
   // Log that we received ANY request to this webhook endpoint
@@ -38,7 +39,46 @@ export const action = async ({request}: ActionFunctionArgs) => {
       payload
     }, 'NEW SUBSCRIPTION CREATED - Customer purchase detected');
 
+  // Get checkout ID from the origin order if available
+  let checkoutId: string | null = null;
   const {admin_graphql_api_origin_order_id: orderId} = payload;
+  
+  if (orderId) {
+    try {
+      const {admin} = await unauthenticated.admin(shop);
+      
+      const orderQuery = `#graphql
+        query GetOrderCheckout($orderId: ID!) {
+          order(id: $orderId) {
+            id
+            checkoutId
+            name
+          }
+        }
+      `;
+      
+      const response = await admin.graphql(orderQuery, {
+        variables: {
+          orderId: orderId,
+        },
+      });
+      
+      const data = await response.json() as any;
+      
+      if (data.data?.order?.checkoutId) {
+        checkoutId = data.data.order.checkoutId;
+        console.log(`🛒 Checkout ID retrieved: ${checkoutId}`);
+        logger.info({checkoutId, orderId}, 'Successfully retrieved checkout ID from origin order');
+      } else {
+        console.log('⚠️ No checkout ID found in origin order');
+        logger.warn({orderId}, 'Origin order exists but has no checkout ID');
+      }
+    } catch (error) {
+      console.log('❌ Failed to retrieve checkout ID:', error);
+      logger.error({error, orderId}, 'Failed to retrieve checkout ID from origin order');
+    }
+  }
+
   if (orderIsFromCheckout(orderId)) {
     const emailParams: Jobs.Parameters<Webhooks.SubscriptionContractEvent> = {
       shop,
@@ -65,11 +105,13 @@ export const action = async ({request}: ActionFunctionArgs) => {
   const externalWebhookParams: Jobs.Parameters<{
     event: string;
     subscriptionData: any;
+    checkoutId?: string | null;
   }> = {
     shop,
     payload: {
       event: 'subscription-created',
       subscriptionData: payload,
+      checkoutId,
     },
   };
 

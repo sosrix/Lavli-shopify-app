@@ -7,6 +7,7 @@ interface ExternalWebhookPayload {
   shop: string;
   event: string;
   subscriptionData: any;
+  checkoutId?: string | null;
   timestamp: string;
 }
 
@@ -14,13 +15,14 @@ export class ExternalWebhookJob extends Job<
   Jobs.Parameters<{
     event: string;
     subscriptionData: any;
+    checkoutId?: string | null;
   }>
 > {
   public queue: string = 'webhooks';
 
   async perform(): Promise<void> {
     const {shop, payload} = this.parameters;
-    const {event, subscriptionData} = payload;
+    const {event, subscriptionData, checkoutId} = payload;
 
     // Extract and prominently log subscription ID
     const subscriptionId = subscriptionData?.id;
@@ -31,17 +33,21 @@ export class ExternalWebhookJob extends Job<
     console.log('\n📤 SENDING EXTERNAL WEBHOOK 📤');
     console.log('===============================');
     console.log(`🆔 SUBSCRIPTION ID: ${subscriptionId}`);
+    if (checkoutId) {
+      console.log(`🛒 CHECKOUT ID: ${checkoutId}`);
+    }
     console.log(`📡 Event: ${event}`);
     console.log(`🏪 Shop: ${shop}`);
     console.log(`🎯 Webhook URL: ${endpoint}`);
     console.log('===============================\n');
     
-    logger.info({shop, event, subscriptionId, subscriptionData}, 'EXTERNAL WEBHOOK JOB - Starting to send external webhook');
+    logger.info({shop, event, subscriptionId, checkoutId, subscriptionData}, 'EXTERNAL WEBHOOK JOB - Starting to send external webhook');
 
     const webhookPayload: ExternalWebhookPayload = {
       shop,
       event,
       subscriptionData,
+      checkoutId,
       timestamp: new Date().toISOString(),
     };
 
