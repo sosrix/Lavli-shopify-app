@@ -1,5 +1,5 @@
 import type {ActionFunctionArgs} from '@remix-run/node';
-import {authenticate, unauthenticated} from '~/shopify.server';
+import {authenticate} from '~/shopify.server';
 import {logger} from '~/utils/logger.server';
 import {ExternalWebhookJob, jobs} from '~/jobs';
 import type {Jobs} from '~/types';
@@ -13,7 +13,7 @@ export const action = async ({request}: ActionFunctionArgs) => {
   console.log(`🏷️ Headers:`, Object.fromEntries(request.headers.entries()));
   
   try {
-    const {topic, shop, payload} = await authenticate.webhook(request);
+    const {topic, shop, payload, admin} = await authenticate.webhook(request);
 
     console.log('\n⏸️ SUBSCRIPTION PAUSED ⏸️');
     console.log('========================');
@@ -34,9 +34,8 @@ export const action = async ({request}: ActionFunctionArgs) => {
   let customAttributes: any[] = [];
   const orderId = payload.admin_graphql_api_origin_order_id;
   
-  if (orderId) {
+  if (orderId && admin) {
     try {
-      const {admin} = await unauthenticated.admin(shop);
       
       const orderQuery = `#graphql
         query GetOrderDetails($orderId: ID!) {

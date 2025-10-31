@@ -5,7 +5,6 @@ import {CustomerSendEmailJob, jobs, TagSubscriptionOrderJob, ExternalWebhookJob}
 import {CustomerEmailTemplateName} from '~/services/CustomerSendEmailService';
 import type {Jobs, Webhooks} from '~/types';
 import {FIRST_ORDER_TAGS} from '~/jobs/tags/constants';
-import {unauthenticated} from '~/shopify.server';
 
 export const action = async ({request}: ActionFunctionArgs) => {
   // Log that we received ANY request to this webhook endpoint
@@ -16,7 +15,7 @@ export const action = async ({request}: ActionFunctionArgs) => {
   console.log(`🏷️ Headers:`, Object.fromEntries(request.headers.entries()));
   
   try {
-    const {topic, shop, payload} = await authenticate.webhook(request);
+    const {topic, shop, payload, admin} = await authenticate.webhook(request);
 
     // Log subscription creation with prominent subscription ID
     console.log('\n🎉 NEW SUBSCRIPTION CREATED! 🎉');
@@ -48,9 +47,8 @@ export const action = async ({request}: ActionFunctionArgs) => {
   let customAttributes: any[] = [];
   const {admin_graphql_api_origin_order_id: orderId} = payload;
   
-  if (orderId) {
+  if (orderId && admin) {
     try {
-      const {admin} = await unauthenticated.admin(shop);
       
       const orderQuery = `#graphql
         query GetOrderDetails($orderId: ID!) {
